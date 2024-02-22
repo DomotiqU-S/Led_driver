@@ -9,16 +9,14 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "freertos/queue.h"
-#include "freertos/semphr.h"
 
-
-#define LEDC_MODE       LEDC_LOW_SPEED_MODE // LEDC speed mode
-#define LEDC_WARM       5                   // Define the output GPIO
-#define LEDC_COOL       6                   // Define the output GPIO
-#define LEDC_DUTY_RES   LEDC_TIMER_13_BIT   // Set duty resolution to 13 bits
-#define MAX_DUTY        (uint32_t)8192      // Maximum duty for 13 bits
-#define LEDC_FREQUENCY  (uint32_t)50000     // Frequency in Hertz. Set frequency at 50 kHz for hearing protection
+#define LEDC_TIMER      LEDC_TIMER_0         // LEDC timer
+#define LEDC_MODE       LEDC_LOW_SPEED_MODE   // LEDC speed mode
+#define LEDC_WARM       5                     // Define the output GPIO
+#define LEDC_COOL       6                     // Define the output GPIO
+#define LEDC_DUTY_RES   LEDC_TIMER_10_BIT // Set duty resolution to 13 bits
+#define MAX_DUTY        (uint32_t)1024         // Maximum duty for 13 bits
+#define LEDC_FREQUENCY  (uint32_t)25000  // Frequency in Hertz. Set frequency at 50 kHz for hearing protection
 // #define DEBUG_SENSOR    0                   // Enable debug logs for the temperature sensor
 
 class LedDriver
@@ -52,24 +50,22 @@ public:
             .clk_cfg = LEDC_AUTO_CLK};
         ESP_ERROR_CHECK(ledc_timer_config(&ledc_timer));
         // Prepare and then apply the LEDC PWM channel configuration
-        ledc_channel_config_t cool_channel = {
-            .speed_mode = LEDC_MODE,
-            .channel = LEDC_CHANNEL_0,
-            .timer_sel = LEDC_TIMER_0,
-            .intr_type = LEDC_INTR_DISABLE,
-            .gpio_num = cool_pin,
-            .duty = (uint32_t)2048, // Set duty to 25%
-            .hpoint = 0
-        };
-        ledc_channel_config_t warm_channel = {
-            .speed_mode = LEDC_MODE,
-            .channel = LEDC_CHANNEL_1,
-            .timer_sel = LEDC_TIMER_1,
-            .intr_type = LEDC_INTR_DISABLE,
-            .gpio_num = warm_pin,
-            .duty = (uint32_t)2048, // Set duty to 25%
-            .hpoint = 0
-        };
+        ledc_channel_config_t cool_channel;
+        cool_channel.speed_mode = LEDC_MODE;
+        cool_channel.channel = LEDC_CHANNEL_0;
+        cool_channel.timer_sel = LEDC_TIMER;
+        cool_channel.intr_type = LEDC_INTR_DISABLE;
+        cool_channel.gpio_num = cool_pin;
+        cool_channel.duty = (uint32_t)256; // Set duty to 25%
+        cool_channel.hpoint = 0;
+        ledc_channel_config_t warm_channel;
+        warm_channel.speed_mode = LEDC_MODE;
+        warm_channel.channel = LEDC_CHANNEL_1;
+        warm_channel.timer_sel = LEDC_TIMER;
+        warm_channel.intr_type = LEDC_INTR_DISABLE;
+        warm_channel.gpio_num = warm_pin;
+        warm_channel.duty = (uint32_t)256; // Set duty to 25%
+        warm_channel.hpoint = 0;
         ESP_ERROR_CHECK(ledc_channel_config(&cool_channel));
         ESP_ERROR_CHECK(ledc_channel_config(&warm_channel));
     }
