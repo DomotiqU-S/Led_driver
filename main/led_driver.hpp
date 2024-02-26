@@ -11,15 +11,22 @@
 #include "freertos/task.h"
 #include "freertos/semphr.h"
 
-#define LEDC_TIMER LEDC_TIMER_0                 // LEDC timer
-#define LEDC_MODE LEDC_LOW_SPEED_MODE           // LEDC speed mode
-#define LEDC_WARM 5                             // Define the output GPIO
-#define LEDC_COOL 6                             // Define the output GPIO
-#define LEDC_DUTY_RES LEDC_TIMER_10_BIT         // Set duty resolution to 13 bits
-#define MAX_DUTY (uint32_t)1024                 // Maximum duty for 13 bits
-#define LEDC_FREQUENCY (uint32_t)25000          // Frequency in Hertz. Set frequency at 50 kHz for hearing protection
-#define LEDC_FADE_TIME (ledc_fade_mode_t)1000   // Fade time in milliseconds 
-// #define DEBUG_SENSOR    0                       // Enable debug logs for the temperature sensor
+#define TAG_SENSOR          "LED_DRIVER"                            // Tag for the logs
+#define LEDC_TIMER          LEDC_TIMER_0                            // LEDC timer
+#define LEDC_MODE           LEDC_LOW_SPEED_MODE                     // LEDC speed mode
+#define LEDC_WARM           5                                       // Define the output GPIO
+#define LEDC_COOL           6                                       // Define the output GPIO
+#define LEDC_DUTY_RES       LEDC_TIMER_10_BIT                       // Set duty resolution to 13 bits
+#define MAX_DUTY            (uint32_t)1024                          // Maximum duty for 13 bits
+#define LEDC_FREQUENCY      (uint32_t)25000                         // Frequency in Hertz. Set frequency at 50 kHz for hearing protection
+#define LEDC_FADE_TIME      (ledc_fade_mode_t)1000                  // Fade time in milliseconds 
+#define MAX_TEMPERATURE     6500.0                                  // Maximum temperature in kelvin
+#define MIN_TEMPERATURE     2700.0                                  // Minimum temperature in kelvin
+#define MID_TEMPERATURE     (MAX_TEMPERATURE + MIN_TEMPERATURE)/2   // Minimum temperature in kelvin
+#define RANGE_TEMPERATURE   (MAX_TEMPERATURE - MIN_TEMPERATURE)     // Range of temperature in kelvin
+// #define INVERSOR            true                                    // Inversor for the temperature
+// #define DEBUG_SENSOR        true                                    // Enable debug logs for the temperature sensor
+
 
 class LedDriver
 {
@@ -29,8 +36,8 @@ private:
     esp_err_t ret;
     uint32_t dutyWarm = 0;
     uint32_t dutyCool = 0;
-    uint16_t temperature = 4600;
-    uint16_t intensity = 0;
+    uint16_t temperature = MID_TEMPERATURE;
+    uint8_t intensity = 0;
     SemaphoreHandle_t semaphore = NULL;
     /*
      * This callback function will be called when fade operation has ended
@@ -118,7 +125,7 @@ public:
      * @param intensity The intensity of the LED in percentage
      * @return esp_err_t the error code
      */
-    esp_err_t setIntensity(uint16_t intensity);
+    esp_err_t setIntensity(uint8_t intensity);
     /**
      * @brief Set the temperature of the LED in degrees kelvin
      * The temperature color of the light bulb.
@@ -139,11 +146,11 @@ public:
      * The intensity of the LED in percentage
      * @return uint16_t The intensity of the LED in percentage
      */
-    uint16_t getIntensity();
+    uint8_t getIntensity();
     /**
      * @brief Get the duty of the LED
      * The duty of the LED in percentage
-     * @return uint16_t The duty of the LED in percentage
+     * @return uint8_t The duty of the LED in percentage
      */
     uint32_t getDuty(int channel);
 };
