@@ -136,7 +136,7 @@ void LedDriver::changeLevel(void *pvParameters)
         ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_0);
         ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_1);
 
-        vTaskDelay(1);
+        vTaskDelay(FADE_INTERVAL);
     }
 
     dutyCycle1 += reminder1;

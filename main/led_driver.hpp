@@ -27,8 +27,7 @@
 // #define INVERSOR            true                                    // Inversor for the temperature
 #define DEBUG_SENSOR        true                                    // Enable debug logs for the temperature sensor
 #define FADE_STEP           450                                      // Fade step in percentage
-#define DEFAULT_WARM_DUTY   511                                       // Default warm duty
-#define DEFAULT_COOL_DUTY   511                                       // Default cool duty
+#define FADE_INTERVAL      1                                     // Fade interval in milliseconds
 
 
 typedef struct ledsDuty
