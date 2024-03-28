@@ -8,85 +8,26 @@ LedDriver::~LedDriver()
 
 esp_err_t LedDriver::switchState(bool state)
 {
-    if (this->fade)
-    {
-        esp_err_t ret = ledc_set_fade_with_time(LEDC_MODE, LEDC_CHANNEL_0, state ? this->dutyCool : 0, this->fade_time);
-        if (ret != ESP_OK)
-        {
-#ifdef DEBUG_SENSOR
-            ESP_LOGE(TAG_SENSOR, "failed to set duty for LEDC channel 0 in fade mode");
-#endif
-            return ret;
-        }
-        ret = ledc_fade_start(LEDC_MODE, LEDC_CHANNEL_0, LEDC_FADE_WAIT_DONE);
-        xSemaphoreTake(this->semaphore, portMAX_DELAY);
-        if (ret != ESP_OK)
-        {
-#ifdef DEBUG_SENSOR
-            ESP_LOGE(TAG_SENSOR, "failed to update duty for LEDC channel 0 in fade mode");
-#endif
-            return ret;
-        }
-        ret = ledc_set_fade_with_time(LEDC_MODE, LEDC_CHANNEL_1, state ? this->dutyWarm : 0, this->fade_time);
-        if (ret != ESP_OK)
-        {
-#ifdef DEBUG_SENSOR
-            ESP_LOGE(TAG_SENSOR, "failed to set duty for LEDC channel 1 in fade mode");
-#endif
-            return ret;
-        }
-        ret = ledc_fade_start(LEDC_MODE, LEDC_CHANNEL_1, LEDC_FADE_WAIT_DONE);
-        xSemaphoreTake(this->semaphore, portMAX_DELAY);
-        if (ret != ESP_OK)
-        {
-#ifdef DEBUG_SENSOR
-            ESP_LOGE(TAG_SENSOR, "failed to update duty for LEDC channel 1 in fade mode");
-#endif
-            return ret;
-        }
-        return ret;
+    this->state = state;
+    
+    if(state) {
+        setIntensity(this->intensity);
     }
-    else
-    {
-        esp_err_t ret = ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_0, state ? this->dutyCool : 0);
-        if (ret != ESP_OK)
-        {
-#ifdef DEBUG_SENSOR
-            ESP_LOGE(TAG_SENSOR, "failed to set duty for LEDC channel 0 in direct mode");
-#endif
-            return ret;
-        }
-        ret = ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_0);
-        if (ret != ESP_OK)
-        {
-#ifdef DEBUG_SENSOR
-            ESP_LOGE(TAG_SENSOR, "failed to update duty for LEDC channel 0 in direct mode");
-#endif
-            return ret;
-        }
-        ret = ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_1, state ? this->dutyWarm : 0);
-        if (ret != ESP_OK)
-        {
-#ifdef DEBUG_SENSOR
-            ESP_LOGE(TAG_SENSOR, "failed to set duty for LEDC channel 1 in direct mode");
-#endif
-            return ret;
-        }
-        ret = ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_1);
-        if (ret != ESP_OK)
-        {
-#ifdef DEBUG_SENSOR
-            ESP_LOGE(TAG_SENSOR, "failed to update duty for LEDC channel 1 in direct mode");
-#endif
-            return ret;
-        }
-        return ret;
+    else {
+        printf("Switching off\n");
+        setLevel(0, 0);
     }
+
+    return ESP_OK;
 }
 
-esp_err_t LedDriver::setIntensity(uint8_t intensity)
+esp_err_t LedDriver::setIntensity(uint8_t intensity)            
 {
     this->intensity = intensity;
+    this->state = this->intensity > 0 ? true : false;
+    if(!this->state) {
+        return setLevel(0, 0);
+    }
     return this->setTemperature(this->temperature);
 }
 
@@ -109,90 +50,29 @@ esp_err_t LedDriver::setTemperature(uint16_t temperature)
         this->dutyWarm = (uint32_t)(MAX_DUTY * (float)((float)((this->intensity) / 100.0)) * (float)((MAX_TEMPERATURE - this->temperature) / RANGE_TEMPERATURE));
         this->dutyCool = (uint32_t)(MAX_DUTY * (float)((float)((this->intensity) / 100.0)) * (float)((this->temperature - MIN_TEMPERATURE) / RANGE_TEMPERATURE));
     }
-#ifdef INVERSOR
-    this->dutyWarm = MAX_DUTY - this->dutyWarm;
-    this->dutyCool = MAX_DUTY - this->dutyCool;
-#endif
-#ifdef DEBUG_SENSOR
-        ESP_LOGI(TAG_SENSOR,"intensity: %"PRIu16, this->intensity);
-        ESP_LOGI(TAG_SENSOR,"temp: %"PRIu16, this->temperature);
-        ESP_LOGI(TAG_SENSOR,"dutyWarm: %"PRIu32, this->dutyWarm);
-        ESP_LOGI(TAG_SENSOR,"dutyCool: %"PRIu32, this->dutyCool);
-#endif
-    if (fade)
-    {
-        esp_err_t ret = ledc_set_fade_with_time(LEDC_MODE, LEDC_CHANNEL_0, this->dutyCool, this->fade_time);
-        if (ret != ESP_OK)
-        {
-#ifdef DEBUG_SENSOR
-            ESP_LOGE(TAG_SENSOR, "failed to set duty for LEDC channel 0 in fade mode");
-#endif
-            return ret;
+        #ifdef INVERSOR
+            this->dutyWarm = MAX_DUTY - this->dutyWarm;
+            this->dutyCool = MAX_DUTY - this->dutyCool;
+        #endif
+        #ifdef DEBUG_SENSOR
+            ESP_LOGI(TAG_SENSOR,"intensity: %"PRIu16, this->intensity);
+            ESP_LOGI(TAG_SENSOR,"temp: %"PRIu16, this->temperature);
+            ESP_LOGI(TAG_SENSOR,"dutyWarm: %"PRIu32, this->dutyWarm);
+            ESP_LOGI(TAG_SENSOR,"dutyCool: %"PRIu32, this->dutyCool);
+        #endif
+
+    // execute the change
+
+    if(this->state) {
+        if(fade) {
+            setLevel(this->dutyCool, this->dutyWarm);
         }
-        ret = ledc_fade_start(LEDC_MODE, LEDC_CHANNEL_0, LEDC_FADE_WAIT_DONE);
-        xSemaphoreTake(this->semaphore, portMAX_DELAY);
-        if (ret != ESP_OK)
-        {
-#ifdef DEBUG_SENSOR
-            ESP_LOGE(TAG_SENSOR, "failed to update duty for LEDC channel 0 in fade mode");
-#endif
-            return ret;
+        else {
+
         }
-        ret = ledc_set_fade_with_time(LEDC_MODE, LEDC_CHANNEL_1, this->dutyWarm, this->fade_time);
-        if (ret != ESP_OK)
-        {
-#ifdef DEBUG_SENSOR
-            ESP_LOGE(TAG_SENSOR, "failed to set duty for LEDC channel 1 in fade mode");
-#endif
-            return ret;
-        }
-        ret = ledc_fade_start(LEDC_MODE, LEDC_CHANNEL_1,LEDC_FADE_WAIT_DONE);
-        xSemaphoreTake(this->semaphore, portMAX_DELAY);
-        if (ret != ESP_OK)
-        {
-#ifdef DEBUG_SENSOR
-            ESP_LOGE(TAG_SENSOR, "failed to update duty for LEDC channel 1 in fade mode");
-#endif
-            return ret;
-        }
-        return ret;
     }
-    else
-    {
-        ret = ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_0, this->dutyCool);
-        if (ret != ESP_OK)
-        {
-#ifdef DEBUG_SENSOR
-            ESP_LOGE(TAG_SENSOR, "failed to set duty for LEDC channel 0");
-#endif
-            return ret;
-        }
-        ret = ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_0);
-        if (ret != ESP_OK)
-        {
-#ifdef DEBUG_SENSOR
-            ESP_LOGE(TAG_SENSOR, "failed to update duty for LEDC channel 0");
-#endif
-            return ret;
-        }
-        ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_1, this->dutyWarm);
-        if (ret != ESP_OK)
-        {
-#ifdef DEBUG_SENSOR
-            ESP_LOGE(TAG_SENSOR, "failed to set duty for LEDC channel 1");
-#endif
-            return ret;
-        }
-        ret = ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_1);
-        if (ret != ESP_OK)
-        {
-#ifdef DEBUG_SENSOR
-            ESP_LOGE(TAG_SENSOR, "failed to update duty for LEDC channel 1");
-#endif
-            return ret;
-        }
-        return ret;
-    }
+
+    return ESP_OK;
 }
 
 uint16_t LedDriver::getTemperature()
@@ -215,4 +95,53 @@ uint32_t LedDriver::getDuty(int channel)
     {
         return this->dutyWarm;
     }
+}
+
+esp_err_t LedDriver::setLevel(uint32_t _dutyCool, uint32_t _dutyWarm)
+{
+    duties->newDutyCool = _dutyCool;
+    duties->newDutyWarm = _dutyWarm;
+    duties->previousDutyCool = previousDutyCool;
+    duties->previousDutyWarm = previousDutyWarm;
+
+    previousDutyCool = _dutyCool;
+    previousDutyWarm = _dutyWarm;
+
+    // Create a task to change the level of the LED
+    BaseType_t res = xTaskCreate(changeLevel, "changeLevel", 2048, (void *) duties, 6, NULL);
+    return res == pdPASS ? ESP_OK : ESP_FAIL;
+}
+
+void LedDriver::changeLevel(void *pvParameters)
+{
+    ledsDuty *duties = (ledsDuty *)pvParameters;
+
+    int fadeSteps = FADE_STEP / 10;
+    int fadeStep1 = (duties->newDutyCool - duties->previousDutyCool) / fadeSteps;
+    int fadeStep2 = (duties->newDutyWarm - duties->previousDutyWarm) / fadeSteps;
+
+    int reminder1 = (duties->newDutyCool - duties->previousDutyCool) % fadeSteps;
+    int reminder2 = (duties->newDutyWarm - duties->previousDutyWarm) % fadeSteps;
+
+    int dutyCycle1 = duties->previousDutyCool;
+    int dutyCycle2 = duties->previousDutyWarm;
+
+    for (int i = 0; i < fadeSteps + 1; i++) {
+        dutyCycle1 = duties->previousDutyCool + (i * fadeStep1);
+        dutyCycle2 = duties->previousDutyWarm + (i * fadeStep2);
+
+        ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_0, dutyCycle1);
+        ledc_set_duty(LEDC_MODE, LEDC_CHANNEL_1, dutyCycle2);
+
+        ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_0);
+        ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_1);
+
+        vTaskDelay(1);
+    }
+
+    dutyCycle1 += reminder1;
+    dutyCycle2 += reminder2;
+
+    // Destroy the task after the execution
+    vTaskDelete(NULL);
 }
