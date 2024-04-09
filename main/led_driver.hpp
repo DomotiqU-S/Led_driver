@@ -77,7 +77,8 @@ public:
      * @param fade The fade option
      * @param fade_time The fade time
      */
-    LedDriver(int cool_pin = LEDC_COOL, int warm_pin = LEDC_WARM, uint32_t frequency = LEDC_FREQUENCY, uint16_t intensity = 50, uint16_t temperature = 4600, bool initial_state = false, bool fade = true)
+    LedDriver(int cool_pin = LEDC_COOL, int warm_pin = LEDC_WARM, uint32_t frequency = LEDC_FREQUENCY, uint16_t intensity = 50, 
+    uint16_t temperature = 4600, bool initial_state = false, bool fade = true)
     {
         this->intensity = intensity;
         this->temperature = temperature;
@@ -160,7 +161,13 @@ public:
      * @return uint8_t The duty of the LED in percentage
      */
     uint32_t getDuty(int channel);
-
+    /**
+     * @brief Change the level of the LED
+     * 
+     * @param pvParameter The parameter for the task
+     * 
+     * @return void
+    */
     static void changeLevel(void *pvParameter);
 };
 
