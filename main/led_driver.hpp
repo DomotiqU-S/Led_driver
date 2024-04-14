@@ -27,7 +27,8 @@
 // #define INVERSOR            true                                    // Inversor for the temperature
 #define DEBUG_SENSOR        true                                    // Enable debug logs for the temperature sensor
 #define FADE_STEP           450                                      // Fade step in percentage
-#define FADE_INTERVAL      1                                     // Fade interval in milliseconds
+#define FADE_INTERVAL      1
+#define FADE_ENABLE         1
 
 
 typedef struct ledsDuty
@@ -74,15 +75,11 @@ public:
      * @param frequency The frequency of the PWM signal
      * @param intensity The intensity of the LED in percentage
      * @param temperature The temperature of the LED in degrees kelvin
-     * @param fade The fade option
-     * @param fade_time The fade time
      */
-    LedDriver(int cool_pin = LEDC_COOL, int warm_pin = LEDC_WARM, uint32_t frequency = LEDC_FREQUENCY, uint16_t intensity = 50, 
-    uint16_t temperature = 4600, bool initial_state = false, bool fade = true)
+    LedDriver(int cool_pin = LEDC_COOL, int warm_pin = LEDC_WARM, uint32_t frequency = LEDC_FREQUENCY, uint16_t intensity = 50, uint16_t temperature = 4600, bool initial_state = false)
     {
         this->intensity = intensity;
         this->temperature = temperature;
-        this->fade = fade;
         this->state = initial_state;
 
         ledc_timer_config_t ledc_timer = {
@@ -115,6 +112,7 @@ public:
         // this->switchState(this->state);
     }
     ~LedDriver();
+    
     /**
      * @brief Switch the state of the LED
      * The state of the LED
@@ -160,14 +158,13 @@ public:
      * The duty of the LED in percentage
      * @return uint8_t The duty of the LED in percentage
      */
-    uint32_t getDuty(int channel);
+    uint32_t getDuty(uint8_t channel);
+
     /**
-     * @brief Change the level of the LED
+     * @brief This is the task that will change the level of the LED simultaneously
      * 
-     * @param pvParameter The parameter for the task
-     * 
-     * @return void
-    */
+     * @param pvParameter 
+     */
     static void changeLevel(void *pvParameter);
 };
 

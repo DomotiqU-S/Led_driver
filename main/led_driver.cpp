@@ -14,7 +14,6 @@ esp_err_t LedDriver::switchState(bool state)
         setIntensity(this->intensity);
     }
     else {
-        printf("Switching off\n");
         setLevel(0, 0);
     }
 
@@ -62,39 +61,7 @@ esp_err_t LedDriver::setTemperature(uint16_t temperature)
         #endif
 
     // execute the change
-
-    if(this->state) {
-        if(fade) {
-            setLevel(this->dutyCool, this->dutyWarm);
-        }
-        else {
-
-        }
-    }
-
-    return ESP_OK;
-}
-
-uint16_t LedDriver::getTemperature()
-{
-    return this->temperature;
-}
-
-uint8_t LedDriver::getIntensity()
-{
-    return this->intensity;
-}
-
-uint32_t LedDriver::getDuty(int channel)
-{
-    if (channel == 0)
-    {
-        return this->dutyCool;
-    }
-    else
-    {
-        return this->dutyWarm;
-    }
+    setLevel(this->dutyCool, this->dutyWarm);
 }
 
 esp_err_t LedDriver::setLevel(uint32_t _dutyCool, uint32_t _dutyWarm)
@@ -136,7 +103,9 @@ void LedDriver::changeLevel(void *pvParameters)
         ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_0);
         ledc_update_duty(LEDC_MODE, LEDC_CHANNEL_1);
 
-        vTaskDelay(FADE_INTERVAL);
+        #ifdef FADE_ENABLE
+            vTaskDelay(FADE_INTERVAL);
+        #endif
     }
 
     dutyCycle1 += reminder1;
@@ -144,4 +113,21 @@ void LedDriver::changeLevel(void *pvParameters)
 
     // Destroy the task after the execution
     vTaskDelete(NULL);
+}
+
+uint32_t LedDriver::getDuty(uint8_t channel) {
+    if(channel == 0) {
+        return dutyCool;
+    }
+    else {
+        return dutyWarm;
+    }
+}
+
+uint16_t LedDriver::getTemperature() {
+    return temperature;
+}
+
+uint8_t LedDriver::getIntensity() {
+    return intensity;
 }
